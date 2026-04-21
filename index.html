@@ -3,167 +3,163 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CatBoard Pro – Управление коллекциями</title>
+  <title>CatBoard Premium – Эстетика котиков</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Nunito:wght@400;700&display=swap');
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: #fff; color: #111; overflow-x: hidden; }
-
-    /* Layout */
-    .app-container { display: flex; min-height: 100vh; }
-    
-    /* Sidebar */
-    .sidebar {
-      width: 280px;
-      padding: 20px;
-      border-right: 1px solid #efefef;
-      position: sticky;
-      top: 80px;
-      height: calc(100vh - 80px);
-      overflow-y: auto;
+    :root {
+      --accent: #ff85a2; /* Нежно-розовый */
+      --accent-hover: #ff6384;
+      --bg-gradient: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
     }
 
-    /* Masonry Grid */
-    .main-content { flex: 1; padding: 20px; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: #2d3436;
+    }
+
+    h1, h2, .logo-text { font-family: 'Montserrat', sans-serif; }
+
+    /* ── Header Styling ── */
+    .header {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(15px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ── Glassmorphism Sidebar ── */
+    .sidebar {
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 0 30px 30px 0;
+      margin: 20px 0;
+    }
+
+    /* ── Masonry & Cards ── */
     .masonry {
       column-count: 4;
-      column-gap: 16px;
+      column-gap: 20px;
     }
     @media (max-width: 1200px) { .masonry { column-count: 3; } }
-    @media (max-width: 900px)  { .masonry { column-count: 2; } }
-    @media (max-width: 600px)  { .masonry { column-count: 1; } }
+    @media (max-width: 768px) { .masonry { column-count: 2; } }
 
     .pin-card {
       break-inside: avoid;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       position: relative;
-      border-radius: 16px;
+      border-radius: 24px;
       overflow: hidden;
-      cursor: zoom-in;
-      transition: transform 0.2s ease;
+      background: white;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: 4px solid transparent;
     }
-    .pin-card:hover { transform: scale(1.01); }
-    .pin-card img { width: 100%; display: block; }
+    .pin-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: var(--accent);
+      box-shadow: 0 15px 30px rgba(255, 133, 162, 0.2);
+    }
 
     .pin-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.25);
-      opacity: 0;
-      transition: opacity 0.3s;
+      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      padding: 12px;
-    }
-    .pin-card:hover .pin-overlay { opacity: 1; }
-
-    /* Header */
-    .header {
-      height: 80px;
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
-      gap: 20px;
-      position: sticky;
-      top: 0;
-      background: white;
-      z-index: 100;
-      border-bottom: 1px solid #efefef;
+      justify-content: flex-end;
     }
 
-    /* UI Elements */
+    /* ── Buttons ── */
     .btn-save {
-      background: #e60023;
+      background: var(--accent);
       color: white;
-      padding: 10px 16px;
-      border-radius: 24px;
+      padding: 8px 20px;
+      border-radius: 50px;
       font-weight: 700;
-      font-size: 14px;
+      transition: 0.3s;
+      box-shadow: 0 4px 15px rgba(255, 133, 162, 0.4);
     }
-    .btn-save:hover { background: #ad081b; }
+    .btn-save:hover {
+      background: var(--accent-hover);
+      transform: scale(1.05);
+    }
 
+    /* ── Custom Search ── */
     .search-input {
-      background: #e9e9e9;
-      border-radius: 24px;
-      padding: 12px 16px;
-      flex: 1;
-      border: none;
-      outline: none;
+      background: rgba(255, 255, 255, 0.8);
+      border: 2px solid transparent;
+      transition: 0.3s;
+      border-radius: 15px;
+    }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(255, 133, 162, 0.2);
+      background: white;
     }
 
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
+    /* ── Decorative Paw Print ── */
+    .paw-icon {
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
-    .modal.active { display: flex; }
 
-    #toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #111;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 30px;
-      transition: transform 0.3s;
-      z-index: 300;
+    /* ── Animations ── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    #toast.show { transform: translateX(-50%) translateY(0); }
+    .pin-card { animation: fadeIn 0.6s ease backwards; }
   </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="flex items-center gap-2 cursor-pointer" onclick="showSection('all')">
-    <div class="bg-black text-white w-10 h-10 flex items-center justify-center rounded-full font-bold text-xl">🐾</div>
-    <span class="font-bold text-xl tracking-tight hidden lg:block">CatBoard</span>
+<header class="header sticky top-0 z-50 flex items-center justify-between px-8 py-4">
+  <div class="flex items-center gap-3 cursor-pointer group" onclick="showSection('all')">
+    <div class="bg-[#ff85a2] text-white w-12 h-12 flex items-center justify-center rounded-2xl font-bold text-2xl shadow-lg group-hover:rotate-12 transition-transform">🐾</div>
+    <span class="logo-text font-extrabold text-2xl tracking-tighter text-gray-800">Cat<span class="text-[#ff85a2]">Board</span></span>
   </div>
   
-  <input type="text" class="search-input" id="searchInput" placeholder="Поиск по породам или настроению..." oninput="filterPins()">
+  <div class="flex-1 max-w-2xl mx-10">
+    <input type="text" class="search-input w-full px-6 py-3 outline-none" id="searchInput" placeholder="Найти пушистого друга..." oninput="filterPins()">
+  </div>
 
-  <div class="flex gap-4 items-center">
-    <button class="font-bold p-2 hover:bg-gray-100 rounded-full">🔔</button>
-    <button class="font-bold p-2 hover:bg-gray-100 rounded-full">💬</button>
-    <div class="w-10 h-10 bg-gray-200 rounded-full overflow-hidden border">
-      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Profile">
+  <div class="flex gap-5 items-center">
+    <button class="text-gray-500 hover:text-[#ff85a2] transition-colors">❤</button>
+    <div class="w-11 h-11 rounded-full border-2 border-[#ff85a2] p-0.5">
+       <img src="https://api.dicebear.com/7.x/bottts/svg?seed=CatOwner" class="rounded-full bg-white" alt="Ava">
     </div>
   </div>
 </header>
 
-<div class="app-container">
-  <aside class="sidebar">
-    <nav class="flex flex-col gap-2">
-      <button onclick="showSection('all')" class="text-left p-3 rounded-lg hover:bg-gray-100 font-semibold flex items-center gap-3">
-        🏠 Главная
+<div class="flex max-w-[1600px] mx-auto">
+  <aside class="sidebar w-72 p-6 hidden md:block">
+    <div class="space-y-2">
+      <button onclick="showSection('all')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-white transition-all font-bold flex items-center gap-3 text-gray-700">
+        🏠 Главная лента
       </button>
-      <button onclick="showSection('saved')" class="text-left p-3 rounded-lg hover:bg-gray-100 font-semibold flex items-center gap-3">
-        📌 Все сохраненные
+      <button onclick="showSection('saved')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-white transition-all font-bold flex items-center gap-3 text-gray-700">
+        💖 Мои любимцы
       </button>
       
-      <div class="mt-8 mb-2 px-3 text-xs font-bold text-gray-500 uppercase tracking-wider flex justify-between items-center">
-        Ваши доски
-        <button onclick="openModal()" class="text-lg hover:text-black">+</button>
-      </div>
-      
-      <div id="boardsList" class="flex flex-col gap-1">
+      <div class="mt-10 mb-4 px-4 text-xs font-black text-[#ff85a2] uppercase tracking-[2px]">Мои коллекции</div>
+      <div id="boardsList" class="space-y-1">
         </div>
-    </nav>
+      
+      <button onclick="openModal()" class="mt-4 w-full border-2 border-dashed border-[#ff85a2] text-[#ff85a2] py-3 rounded-xl font-bold hover:bg-[#ff85a2] hover:text-white transition-all">
+        + Новая доска
+      </button>
+    </div>
   </aside>
 
-  <main class="main-content">
-    <div class="flex justify-between items-center mb-6">
-      <h1 id="pageTitle" class="text-3xl font-extrabold">Для вас</h1>
-      <div class="flex gap-2" id="categoryChips">
-        </div>
+  <main class="flex-1 p-8">
+    <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+      <div>
+        <p class="text-[#ff85a2] font-bold uppercase tracking-widest text-xs mb-1">Мяу-подборка</p>
+        <h1 id="pageTitle" class="text-4xl font-extrabold text-gray-900">Для вас</h1>
+      </div>
     </div>
 
     <div class="masonry" id="pinGrid">
@@ -171,145 +167,117 @@
   </main>
 </div>
 
-<div class="modal" id="boardModal" onclick="closeModal()">
-  <div class="bg-white p-8 rounded-3xl w-full max-w-md" onclick="event.stopPropagation()">
-    <h2 class="text-2xl font-bold mb-6 text-center">Создать доску</h2>
-    <input type="text" id="boardNameInput" class="w-full border-2 border-gray-200 rounded-xl p-4 mb-4 outline-none focus:border-black" placeholder="Название (например, 'Рыжие коты')">
-    <div class="flex justify-end gap-3">
-      <button onclick="closeModal()" class="px-6 py-3 font-bold hover:bg-gray-100 rounded-xl">Отмена</button>
-      <button onclick="createBoard()" class="px-6 py-3 bg-black text-white font-bold rounded-xl">Создать</button>
+<div class="modal fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] hidden items-center justify-center" id="boardModal" onclick="closeModal()">
+  <div class="bg-white p-10 rounded-[40px] w-full max-w-sm shadow-2xl transition-all" onclick="event.stopPropagation()">
+    <div class="text-center mb-6">
+       <div class="text-4xl mb-2">📁</div>
+       <h2 class="text-2xl font-black">Назовите доску</h2>
     </div>
+    <input type="text" id="boardNameInput" class="w-full bg-gray-100 rounded-2xl p-4 mb-6 outline-none focus:ring-2 ring-[#ff85a2]" placeholder="Напр: Спящие булочки">
+    <button onclick="createBoard()" class="w-full py-4 bg-[#ff85a2] text-white font-black rounded-2xl shadow-lg hover:bg-[#ff6384] transition-all">Создать коллекцию</button>
   </div>
 </div>
 
-<div id="toast">📋 Сохранено!</div>
+<div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-full font-bold shadow-2xl opacity-0 translate-y-20 transition-all pointer-events-none"></div>
 
 <script>
-// Объединенная база всех фотографий (19 шт)
 const allPins = [
-  { id: 1, title: 'Милый котенок', cat: 'Милые', img: 'photo_2026-04-21_15-22-03.jpg' },
-  { id: 2, title: 'Пушистый соня', cat: 'Спящие', img: 'photo_2026-04-21_15-22-07.jpg' },
-  { id: 3, title: 'Глазастый малыш', cat: 'Милые', img: 'photo_2026-04-21_15-22-10.jpg' },
-  { id: 4, title: 'Охотник в траве', cat: 'Охота', img: 'photo_2026-04-21_15-22-14.jpg' },
-  { id: 5, title: 'Удивленный кот', cat: 'Смешные', img: 'photo_2026-04-21_15-22-18.jpg' },
-  { id: 6, title: 'Уютный вечер', cat: 'Спящие', img: 'photo_2026-04-21_15-22-21.jpg' },
-  { id: 7, title: 'Рыжий красавец', cat: 'Рыжие', img: 'photo_2026-04-21_15-22-25.jpg' },
-  { id: 8, title: 'Кот-ниндзя', cat: 'Охота', img: 'photo_2026-04-21_15-22-32.jpg' },
-  { id: 9, title: 'В коробке', cat: 'Смешные', img: 'photo_2026-04-21_15-22-35.jpg' },
-  // Новые фото
-  { id: 10, title: 'Портрет кота', cat: 'Милые', img: 'photo_2026-02-07_13-21-39.jpg' },
-  { id: 11, title: 'Весеннее настроение', cat: 'Активные', img: 'photo_2026-02-10_12-08-15.jpg' },
-  { id: 12, title: 'Зимний кот', cat: 'Спящие', img: 'photo_2026-01-17_17-07-26.jpg' },
-  { id: 13, title: 'Ночной дозор', cat: 'Охота', img: 'photo_2026-01-21_00-16-57.jpg' },
-  { id: 14, title: 'Домашний уют', cat: 'Милые', img: 'photo_2026-01-21_15-59-06.jpg' },
-  { id: 15, title: 'Солнечный зайчик', cat: 'Рыжие', img: 'photo_2026-01-22_16-59-05.jpg' },
-  { id: 16, title: 'Кот на отдыхе', cat: 'Спящие', img: 'photo_2026-01-22_19-56-19.jpg' },
-  { id: 17, title: 'Любопытный нос', cat: 'Смешные', img: 'photo_2026-01-22_20-07-55.jpg' },
-  { id: 18, title: 'Игрок', cat: 'Активные', img: 'photo_2026-01-23_01-12-24.jpg' },
-  { id: 19, title: 'Взгляд', cat: 'Милые', img: 'photo_2026-01-24_00-19-20.jpg' }
+  { id: 1, title: 'Рыжее облако', cat: 'Милые', img: 'photo_2026-04-21_15-22-03.jpg' },
+  { id: 2, title: 'Сонный час', cat: 'Спящие', img: 'photo_2026-04-21_15-22-07.jpg' },
+  { id: 3, title: 'Любопытство', cat: 'Милые', img: 'photo_2026-04-21_15-22-10.jpg' },
+  { id: 4, title: 'Лесной охотник', cat: 'Активные', img: 'photo_2026-04-21_15-22-14.jpg' },
+  { id: 5, title: 'Шок и трепет', cat: 'Смешные', img: 'photo_2026-04-21_15-22-18.jpg' },
+  { id: 6, title: 'Тихий уют', cat: 'Спящие', img: 'photo_2026-04-21_15-22-21.jpg' },
+  { id: 7, title: 'Лев в миниатюре', cat: 'Рыжие', img: 'photo_2026-04-21_15-22-25.jpg' },
+  { id: 8, title: 'Прыжок', cat: 'Активные', img: 'photo_2026-04-21_15-22-32.jpg' },
+  { id: 9, title: 'Коробочный житель', cat: 'Смешные', img: 'photo_2026-04-21_15-22-35.jpg' },
+  { id: 10, title: 'Благородство', cat: 'Милые', img: 'photo_2026-02-07_13-21-39.jpg' },
+  { id: 11, title: 'Прогулка', cat: 'Активные', img: 'photo_2026-02-10_12-08-15.jpg' },
+  { id: 12, title: 'Снежный страж', cat: 'Спящие', img: 'photo_2026-01-17_17-07-26.jpg' },
+  { id: 13, title: 'Ночной патруль', cat: 'Активные', img: 'photo_2026-01-21_00-16-57.jpg' },
+  { id: 14, title: 'Взгляд из тени', cat: 'Милые', img: 'photo_2026-01-21_15-59-06.jpg' },
+  { id: 15, title: 'Лучи солнца', cat: 'Рыжие', img: 'photo_2026-01-22_16-59-05.jpg' },
+  { id: 16, title: 'Дневная сиеста', cat: 'Спящие', img: 'photo_2026-01-22_19-56-19.jpg' },
+  { id: 17, title: 'Что это там?', cat: 'Смешные', img: 'photo_2026-01-22_20-07-55.jpg' },
+  { id: 18, title: 'Игривость', cat: 'Активные', img: 'photo_2026-01-23_01-12-24.jpg' },
+  { id: 19, title: 'Задумчивость', cat: 'Милые', img: 'photo_2026-01-24_00-19-20.jpg' }
 ];
 
-let boards = JSON.parse(localStorage.getItem('catBoards')) || [
-  { id: 1, name: 'Избранное', pins: [] }
-];
-let currentSection = 'all'; // all, saved, or board ID
+let boards = JSON.parse(localStorage.getItem('catBoardsV2')) || [{ id: 1, name: 'Избранное', pins: [] }];
+let currentSection = 'all';
 let searchQuery = '';
 
-// Рендер досок в сайдбаре
 function renderBoardsList() {
   const list = document.getElementById('boardsList');
   list.innerHTML = boards.map(b => `
-    <button onclick="showSection('board', ${b.id})" class="text-left p-3 rounded-lg hover:bg-gray-100 text-sm font-medium flex justify-between items-center group">
-      <span>📂 ${b.name}</span>
-      <span class="text-xs text-gray-400">${b.pins.length}</span>
+    <button onclick="showSection('board', ${b.id})" class="w-full text-left px-4 py-2 rounded-xl hover:bg-white text-sm font-bold flex justify-between items-center group transition-all">
+      <span class="text-gray-600 group-hover:text-black">🐾 ${b.name}</span>
+      <span class="bg-[#ff85a2]/10 text-[#ff85a2] px-2 py-0.5 rounded-lg text-[10px]">${b.pins.length}</span>
     </button>
   `).join('');
 }
 
-// Переключение разделов
 function showSection(type, id = null) {
   currentSection = type === 'board' ? id : type;
   const title = document.getElementById('pageTitle');
   
   if (type === 'all') title.textContent = 'Для вас';
   else if (type === 'saved') title.textContent = 'Все сохраненные';
-  else {
-    const board = boards.find(b => b.id === id);
-    title.textContent = board ? board.name : 'Доска';
-  }
+  else title.textContent = boards.find(b => b.id === id)?.name || 'Доска';
   
   renderGrid();
 }
 
-// Сохранение в доску (по умолчанию в первую)
-function togglePinSave(pinId, event) {
-  event.stopPropagation();
-  const targetBoard = boards[0]; // Для упрощения сохраняем в "Избранное"
-  
-  if (targetBoard.pins.includes(pinId)) {
-    targetBoard.pins = targetBoard.pins.filter(id => id !== pinId);
-    showToast('Удалено из коллекции');
-  } else {
-    targetBoard.pins.push(pinId);
-    showToast('Сохранено в Избранное! 🐾');
-  }
-  
-  localStorage.setItem('catBoards', JSON.stringify(boards));
-  renderBoardsList();
-  renderGrid();
-}
-
-// Рендер сетки
 function renderGrid() {
   const grid = document.getElementById('pinGrid');
   let filtered = [];
 
-  if (currentSection === 'all') {
-    filtered = allPins;
-  } else if (currentSection === 'saved') {
-    const allSavedIds = [...new Set(boards.flatMap(b => b.pins))];
-    filtered = allPins.filter(p => allSavedIds.includes(p.id));
+  if (currentSection === 'all') filtered = allPins;
+  else if (currentSection === 'saved') {
+    const ids = [...new Set(boards.flatMap(b => b.pins))];
+    filtered = allPins.filter(p => ids.includes(p.id));
   } else {
-    const board = boards.find(b => b.id === currentSection);
-    filtered = board ? allPins.filter(p => board.pins.includes(p.id)) : [];
+    filtered = allPins.filter(p => boards.find(b => b.id === currentSection)?.pins.includes(p.id));
   }
 
   if (searchQuery) {
     filtered = filtered.filter(p => p.title.toLowerCase().includes(searchQuery) || p.cat.toLowerCase().includes(searchQuery));
   }
 
-  grid.innerHTML = filtered.map(pin => {
+  grid.innerHTML = filtered.map((pin, index) => {
     const isSaved = boards.some(b => b.pins.includes(pin.id));
     return `
-      <div class="pin-card">
+      <div class="pin-card" style="animation-delay: ${index * 0.05}s">
         <img src="${pin.img}" alt="${pin.title}">
-        <div class="pin-overlay">
-          <div class="flex justify-end">
-            <button onclick="togglePinSave(${pin.id}, event)" class="btn-save">
-              ${isSaved ? 'Сохранено' : 'Сохранить'}
+        <div class="pin-overlay absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300">
+          <div class="flex justify-end mb-auto">
+            <button onclick="toggleSave(${pin.id}, event)" class="btn-save shadow-lg">
+              ${isSaved ? 'Удалить' : 'В коллекцию'}
             </button>
           </div>
-          <div class="text-white font-bold text-shadow">${pin.title}</div>
+          <div class="text-white">
+            <p class="text-[10px] uppercase font-bold tracking-widest opacity-80">${pin.cat}</p>
+            <h3 class="font-black text-lg leading-tight">${pin.title}</h3>
+          </div>
         </div>
       </div>
     `;
   }).join('');
 }
 
-// Модальное окно
-function openModal() { document.getElementById('boardModal').classList.add('active'); }
-function closeModal() { document.getElementById('boardModal').classList.remove('active'); }
-
-function createBoard() {
-  const name = document.getElementById('boardNameInput').value.trim();
-  if (!name) return;
-  
-  boards.push({ id: Date.now(), name: name, pins: [] });
-  localStorage.setItem('catBoards', JSON.stringify(boards));
-  document.getElementById('boardNameInput').value = '';
-  closeModal();
+function toggleSave(pinId, event) {
+  event.stopPropagation();
+  const mainBoard = boards[0];
+  if (mainBoard.pins.includes(pinId)) {
+    mainBoard.pins = mainBoard.pins.filter(id => id !== pinId);
+    showToast('Убрано из Избранного');
+  } else {
+    mainBoard.pins.push(pinId);
+    showToast('Мур! Сохранено ❤️');
+  }
+  localStorage.setItem('catBoardsV2', JSON.stringify(boards));
   renderBoardsList();
-  showToast(`Доска "${name}" создана!`);
+  renderGrid();
 }
 
 function filterPins() {
@@ -317,14 +285,31 @@ function filterPins() {
   renderGrid();
 }
 
+function openModal() { document.getElementById('boardModal').classList.remove('hidden'); document.getElementById('boardModal').classList.add('flex'); }
+function closeModal() { document.getElementById('boardModal').classList.add('hidden'); }
+
+function createBoard() {
+  const name = document.getElementById('boardNameInput').value.trim();
+  if (!name) return;
+  boards.push({ id: Date.now(), name, pins: [] });
+  localStorage.setItem('catBoardsV2', JSON.stringify(boards));
+  document.getElementById('boardNameInput').value = '';
+  closeModal();
+  renderBoardsList();
+  showToast(`Доска "${name}" создана!`);
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
+  t.classList.remove('opacity-0', 'translate-y-20');
+  t.classList.add('opacity-100', 'translate-y-0');
+  setTimeout(() => {
+    t.classList.add('opacity-0', 'translate-y-20');
+    t.classList.remove('opacity-100', 'translate-y-0');
+  }, 2500);
 }
 
-// Инициализация
 renderBoardsList();
 renderGrid();
 </script>
