@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PinBoard – Pinterest-style</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #f5f5f5; }
+
+    /* ── Masonry grid ── */
+    .masonry {
+      column-count: 5;
+      column-gap: 14px;
+      padding: 14px;
+    }
+    @media (max-width: 1400px) { .masonry { column-count: 4; } }
+    @media (max-width: 1100px) { .masonry { column-count: 3; } }
+    @media (max-width: 750px)  { .masonry { column-count: 2; } }
+    @media (max-width: 480px)  { .masonry { column-count: 1; } }
+
+    .pin-card {
+      break-inside: avoid;
+      margin-bottom: 14px;
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      cursor: zoom-in;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      transition: transform .22s ease, box-shadow .22s ease;
+      display: inline-block;
+      width: 100%;
+    }
+    .pin-card:hover { transform: translateY(-4px) scale(1.012); box-shadow: 0 10px 32px rgba(0,0,0,.15); }
+
+    .pin-card img {
+      width: 100%;
+      display: block;
+      border-radius: 18px 18px 0 0;
+      object-fit: cover;
+    }
+
+    /* Overlay on hover */
+    .pin-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 18px 18px 0 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,.28) 0%, transparent 40%, transparent 60%, rgba(0,0,0,.18) 100%);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .pin-card:hover .pin-overlay { opacity: 1; }
+
+    /* Save button */
+    .btn-save {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 8px 18px;
+      border-radius: 24px;
+      font-weight: 700;
+      font-size: .82rem;
+      border: none;
+      cursor: pointer;
+      transition: background .18s, transform .14s;
+      z-index: 10;
+      opacity: 0;
+    }
+    .pin-card:hover .btn-save { opacity: 1; }
+    .btn-save.unsaved { background: #e60023; color: #fff; }
+    .btn-save.saved   { background: #111;    color: #fff; }
+    .btn-save:hover   { transform: scale(1.07); }
+
+    /* More (⋯) button */
+    .btn-more {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.92);
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+      transition: opacity .2s, transform .15s;
+      z-index: 10;
+    }
+    .pin-card:hover .btn-more { opacity: 1; }
+    .btn-more:hover { transform: scale(1.12); background:#fff; }
+
+    /* Pin footer */
+    .pin-footer {
+      padding: 10px 12px 12px;
+      background: #fff;
+      border-radius: 0 0 18px 18px;
+    }
+    .pin-title {
+      font-size: .88rem;
+      font-weight: 600;
+      color: #111;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pin-author {
+      font-size: .75rem;
+      color: #767676;
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .avatar-sm {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,#e60023,#ff8c00);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: .55rem; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .pin-likes {
+      font-size: .72rem;
+      color: #999;
+      margin-top: 4px;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff;
+      box-shadow: 0 1px 8px rgba(0,0,0,.08);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 20px;
+    }
+    .logo {
+      width: 36px; height: 36px;
+      background: #e60023;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo svg { width: 20px; height: 20px; fill: #fff; }
+
+    .search-wrap {
+      flex: 1;
+      max-width: 600px;
+      position: relative;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 10px 16px 10px 42px;
+      border-radius: 24px;
+      border: none;
+      background: #f0f0f0;
+      font-size: .9rem;
+      outline: none;
+      transition: background .2s, box-shadow .2s;
+      font-family: inherit;
+    }
+    .search-wrap input:focus { background: #e8e8e8; box-shadow: 0 0 0 3px rgba(230,0,35,.15); }
+    .search-wrap .icon-search {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: #767676; font-size: 1rem;
+    }
+
+    .nav-btn {
+      padding: 9px 18px;
+      border-radius: 24px;
+      border: none;
+      background: #f0f0f0;
+      font-weight: 600;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: background .18s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .nav-btn:hover { background: #e0e0e0; }
+    .nav-btn.primary { background: #e60023; color: #fff; }
+    .nav-btn.primary:hover { background: #c0001e; }
+
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,#e60023,#ff8c00);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; font-weight: 700; color: #fff;
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex; gap: 8px; padding: 12px 20px 6px;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .chip {
+      padding: 8px 16px;
+      border-radius: 24px;
+      border: none;
+      background: #efefef;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .18s, color .18s;
+      font-family: inherit;
+    }
+    .chip.active { background: #111; color: #fff; }
+    .chip:hover:not(.active) { background: #dedede; }
+
+    /* ── Board sidebar ── */
+    .boards-sidebar {
+      position: fixed;
+      right: -320px;
+      top: 0; bottom: 0;
+      width: 320px;
+      background: #fff;
+      box-shadow: -4px 0 24px rgba(0,0,0,.12);
+      z-index: 200;
+      transition: right .3s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column;
+    }
+    .boards-sidebar.open { right: 0; }
+    .sidebar-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.35);
+      z-index: 199;
+      display: none; opacity: 0;
+      transition: opacity .3s;
+    }
+    .sidebar-overlay.open { display: block; opacity: 1; }
+
+    .board-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background .18s;
+      margin: 4px 12px;
+    }
+    .board-card:hover { background: #f5f5f5; }
+    .board-thumb {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: linear-gradient(135deg,#f0f0f0,#ddd);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+    }
+    .board-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+    .board-info .board-name { font-weight: 700; font-size: .9rem; color: #111; }
+    .board-info .board-count { font-size: .75rem; color: #767676; }
+
+    /* ── Pin Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 24px;
+      max-width: 880px;
+      width: 100%;
+      max-height: 92vh;
+      overflow: hidden;
+      display: flex;
+      transform: scale(.93);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+      position: relative;
+    }
+    .modal-backdrop.open .modal-box { transform: scale(1); }
+
+    .modal-img-wrap {
+      flex: 0 0 52%;
+      background: #f0f0f0;
+      max-height: 92vh;
+      overflow: hidden;
+      border-radius: 24px 0 0 24px;
+    }
+    .modal-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .modal-content {
+      flex: 1;
+      padding: 28px 28px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-close {
+      position: absolute;
+      top: 14px; right: 14px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: #f0f0f0;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+      transition: background .18s, transform .15s;
+    }
+    .modal-close:hover { background: #e0e0e0; transform: scale(1.1); }
+
+    .modal-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .modal-title { font-size: 1.45rem; font-weight: 800; color: #111; line-height: 1.25; }
+    .modal-desc { font-size: .88rem; color: #555; line-height: 1.6; }
+    .modal-tag {
+      display: inline-block;
+      background: #f5f5f5; border-radius: 24px;
+      padding: 4px 12px; font-size: .75rem; font-weight: 600;
+      color: #333; margin: 2px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .modal-tag:hover { background: #e8e8e8; }
+
+    .modal-board-select {
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: .85rem;
+      font-family: inherit;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      flex: 1;
+      transition: border-color .18s;
+    }
+    .modal-board-select:focus { border-color: #e60023; }
+
+    .btn-save-modal {
+      padding: 10px 22px;
+      border-radius: 24px;
+      background: #e60023;
+      color: #fff;
+      font-weight: 700;
+      font-size: .9rem;
+      border: none;
+      cursor: pointer;
+      transition: background .18s, transform .14s;
+      font-family: inherit;
+    }
+    .btn-save-modal:hover { background: #c0001e; transform: scale(1.04); }
+    .btn-save-modal.saved-modal { background: #111; }
+    .btn-save-modal.saved-modal:hover { background: #333; }
+
+    .stat-row {
+      display: flex; gap: 18px;
+    }
+    .stat-item {
+      display: flex; flex-direction: column; align-items: center;
+      background: #f8f8f8; border-radius: 14px;
+      padding: 10px 18px;
+    }
+    .stat-val { font-size: 1.1rem; font-weight: 800; color: #111; }
+    .stat-lbl { font-size: .7rem; color: #888; font-weight: 500; }
+
+    .comment-input-wrap {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .comment-input {
+      flex: 1; padding: 9px 14px;
+      border: 2px solid #e8e8e8; border-radius: 24px;
+      font-size: .85rem; outline: none;
+      font-family: inherit;
+      transition: border-color .18s;
+    }
+    .comment-input:focus { border-color: #e60023; }
+    .btn-comment {
+      padding: 9px 18px; border-radius: 24px;
+      background: #e60023; color: #fff;
+      font-weight: 700; font-size: .82rem;
+      border: none; cursor: pointer; font-family: inherit;
+      transition: background .18s;
+    }
+    .btn-comment:hover { background: #c0001e; }
+
+    .comment-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .comment-text { font-size: .82rem; color: #333; }
+    .comment-author { font-weight: 700; font-size: .82rem; }
+
+    /* Notification toast */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #111; color: #fff;
+      padding: 12px 24px; border-radius: 24px;
+      font-size: .88rem; font-weight: 600;
+      z-index: 999; transition: transform .3s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* New board modal */
+    .nb-modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 400;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .22s;
+    }
+    .nb-modal.open { opacity: 1; pointer-events: all; }
+    .nb-box {
+      background: #fff; border-radius: 20px;
+      padding: 32px 28px; width: 360px; max-width: 95vw;
+      display: flex; flex-direction: column; gap: 16px;
+      transform: scale(.92);
+      transition: transform .22s cubic-bezier(.4,0,.2,1);
+    }
+    .nb-modal.open .nb-box { transform: scale(1); }
+    .nb-input {
+      border: 2px solid #e0e0e0; border-radius: 12px;
+      padding: 11px 14px; font-size: .9rem;
+      font-family: inherit; outline: none;
+      transition: border-color .18s;
+    }
+    .nb-input:focus { border-color: #e60023; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+    /* responsive modal */
+    @media (max-width: 640px) {
+      .modal-box { flex-direction: column; max-height: 95vh; border-radius: 20px; }
+      .modal-img-wrap { flex: 0 0 280px; border-radius: 20px 20px 0 0; }
+      .modal-img-wrap img { height: 280px; }
+    }
+
+    .section-head {
+      font-size: 1.5rem; font-weight: 800; color: #111;
+      padding: 18px 20px 4px;
+    }
+
+    .like-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #f0f0f0; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: background .18s, transform .15s;
+    }
+    .like-btn:hover { background: #ffe0e4; transform: scale(1.15); }
+    .like-btn.liked { background: #ffe0e4; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ NAVBAR ══════════════ -->
+<nav class="navbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+  </div>
+
+  <button class="nav-btn" onclick="showSection('home')">Home</button>
+  <button class="nav-btn" onclick="showSection('saved')">Saved</button>
+
+  <div class="search-wrap">
+    <span class="icon-search">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search for pins…" oninput="filterPins()"/>
+  </div>
+
+  <button class="nav-btn primary" onclick="openNewBoard()">+ Board</button>
+  <button class="nav-btn" onclick="toggleSidebar()">📋 Boards</button>
+  <div class="avatar">YO</div>
+</nav>
+
+<!-- ══════════════ FILTER CHIPS ══════════════ -->
+<div class="filter-bar" id="filterBar">
+  <button class="chip active" onclick="setCategory('All',this)">All</button>
+  <button class="chip" onclick="setCategory('Nature',this)">🌿 Nature</button>
+  <button class="chip" onclick="setCategory('Architecture',this)">🏛 Architecture</button>
+  <button class="chip" onclick="setCategory('Food',this)">🍜 Food</button>
+  <button class="chip" onclick="setCategory('Travel',this)">✈️ Travel</button>
+  <button class="chip" onclick="setCategory('Art',this)">🎨 Art</button>
+  <button class="chip" onclick="setCategory('Fashion',this)">👗 Fashion</button>
+  <button class="chip" onclick="setCategory('Tech',this)">💻 Tech</button>
+  <button class="chip" onclick="setCategory('Animals',this)">🐾 Animals</button>
+</div>
+
+<!-- ══════════════ SECTION TITLE ══════════════ -->
+<div class="section-head" id="sectionHead">Explore Pins</div>
+
+<!-- ══════════════ MASONRY GRID ══════════════ -->
+<div class="masonry" id="masonryGrid"></div>
+<div id="emptyMsg" style="display:none;text-align:center;padding:60px 20px;color:#888;font-size:1rem;font-weight:600;">No pins found 😔</div>
+
+<!-- ══════════════ BOARDS SIDEBAR ══════════════ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<aside class="boards-sidebar" id="boardsSidebar">
+  <div style="padding:20px 20px 10px;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:1.15rem;font-weight:800;">Your Boards</span>
+    <button onclick="toggleSidebar()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#555;">✕</button>
+  </div>
+  <div style="padding:0 12px 12px;">
+    <button onclick="openNewBoard()" style="width:100%;padding:10px;border-radius:12px;background:#f0f0f0;border:none;font-weight:700;font-size:.88rem;cursor:pointer;font-family:inherit;transition:background .18s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">+ Create new board</button>
+  </div>
+  <div id="boardsList" style="overflow-y:auto;flex:1;padding-bottom:20px;"></div>
+</aside>
+
+<!-- ══════════════ PIN DETAIL MODAL ══════════════ -->
+<div class="modal-backdrop" id="pinModal" onclick="handleModalClick(event)">
+  <div class="modal-box" id="modalBox">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-img-wrap">
+      <img id="modalImg" src="" alt=""/>
+    </div>
+    <div class="modal-content">
+      <!-- Actions row -->
+      <div class="modal-actions">
+        <button class="like-btn" id="modalLikeBtn" onclick="toggleModalLike()">🤍</button>
+        <select class="modal-board-select" id="modalBoardSelect"></select>
+        <button class="btn-save-modal" id="modalSaveBtn" onclick="saveToBoard()">Save</button>
+      </div>
+      <!-- Stats -->
+      <div class="stat-row" id="modalStats"></div>
+      <!-- Title & desc -->
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-desc"  id="modalDesc"></div>
+      <!-- Tags -->
+      <div id="modalTags"></div>
+      <!-- Author -->
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;">
+        <div class="avatar" style="width:42px;height:42px;font-size:.9rem;" id="modalAvatar"></div>
+        <div>
+          <div style="font-weight:700;font-size:.9rem;" id="modalAuthorName"></div>
+          <div style="font-size:.75rem;color:#888;" id="modalFollowers"></div>
+        </div>
+        <button style="margin-left:auto;padding:8px 18px;border-radius:24px;background:#f0f0f0;border:none;font-weight:700;font-size:.82rem;cursor:pointer;font-family:inherit;" onclick="showToast('Following! 🎉')">Follow</button>
+      </div>
+      <!-- Comments -->
+      <div style="font-weight:700;font-size:.88rem;">Comments</div>
+      <div id="modalComments" style="display:flex;flex-direction:column;gap:2px;max-height:160px;overflow-y:auto;"></div>
+      <div class="comment-input-wrap">
+        <div class="avatar" style="width:32px;height:32px;font-size:.7rem;flex-shrink:0;">YO</div>
+        <input class="comment-input" id="commentInput" placeholder="Add a comment…" onkeydown="if(event.key==='Enter')postComment()"/>
+        <button class="btn-comment" onclick="postComment()">Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ NEW BOARD MODAL ══════════════ -->
+<div class="nb-modal" id="nbModal" onclick="handleNbClick(event)">
+  <div class="nb-box">
+    <div style="font-size:1.2rem;font-weight:800;">Create Board</div>
+    <input class="nb-input" id="nbNameInput" placeholder="Board name…" maxlength="40"/>
+    <select class="nb-input" id="nbEmojiSelect" style="cursor:pointer;">
+      <option value="📌">📌 General</option>
+      <option value="🌿">🌿 Nature</option>
+      <option value="🏛">🏛 Architecture</option>
+      <option value="🍜">🍜 Food</option>
+      <option value="✈️">✈️ Travel</option>
+      <option value="🎨">🎨 Art</option>
+      <option value="👗">👗 Fashion</option>
+      <option value="💻">💻 Tech</option>
+      <option value="🐾">🐾 Animals</option>
+      <option value="❤️">❤️ Favourites</option>
+    </select>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeNewBoard()" style="flex:1;padding:11px;border-radius:12px;background:#f0f0f0;border:none;font-weight:700;cursor:pointer;font-family:inherit;">Cancel</button>
+      <button onclick="createBoard()" style="flex:1;padding:11px;border-radius:12px;background:#e60023;color:#fff;border:none;font-weight:700;cursor:pointer;font-family:inherit;">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TOAST ══════════════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════
+const pins = [
+  { id:1,  img:'foto1.png',  title:'Forest Morning Mist',      author:'Elena Woods',    category:'Nature',       likes:4821, saves:1203, desc:'A breathtaking misty forest trail captured at dawn. The light filters through ancient pines creating magical rays of gold.',  tags:['forest','morning','mist','nature'],   comments:[] },
+  { id:2,  img:'foto2.png',  title:'Minimalist Living Room',   author:'James Arch',     category:'Architecture', likes:3240, saves:876,  desc:'Clean lines and neutral tones define this stunning Scandinavian-inspired living space with natural oak accents.',            tags:['interior','minimal','design'],        comments:[] },
+  { id:3,  img:'foto3.png',  title:'Ramen Bowl Art',           author:'Yuki Chef',      category:'Food',         likes:6102, saves:2100, desc:'Handcrafted tonkotsu ramen with hand-pulled noodles, soft-boiled egg and chashu pork. Tokyo's finest.',                    tags:['ramen','japanese','food'],            comments:[] },
+  { id:4,  img:'foto4.png',  title:'Santorini Sunset',         author:'Maria Travel',   category:'Travel',       likes:9832, saves:4421, desc:'Golden hour over the iconic blue-domed churches of Oia, Santorini. One of the world's most romantic sunsets.',              tags:['santorini','greece','sunset'],        comments:[] },
+  { id:5,  img:'foto5.png',  title:'Abstract Watercolor',      author:'Leo Paints',     category:'Art',          likes:2987, saves:654,  desc:'A fluid exploration of color and form using wet-on-wet watercolor technique. Original 50×70cm work.',                      tags:['watercolor','abstract','art'],        comments:[] },
+  { id:6,  img:'foto6.png',  title:'Street Style Fall',        author:'Mia Fashion',    category:'Fashion',      likes:5543, saves:1890, desc:'Autumn editorial featuring oversized blazer, wide-leg trousers and chunky loafers. Effortless chic.',                     tags:['fashion','fall','streetstyle'],       comments:[] },
+  { id:7,  img:'foto7.png',  title:'MacBook Setup 2025',       author:'Dev Studio',     category:'Tech',         likes:7821, saves:3210, desc:'Ultra-clean developer workspace with dual monitors, custom keycaps and perfect cable management.',                         tags:['setup','tech','workspace'],           comments:[] },
+  { id:8,  img:'foto8.png',  title:'Red Fox Portrait',         author:'Wild Lens',      category:'Animals',      likes:11203,saves:5600, desc:'A curious red fox photographed in the wild during a winter morning in Scandinavia. 600mm f/4 shot.',                     tags:['fox','wildlife','portrait'],          comments:[] },
+  { id:9,  img:'foto9.png',  title:'Cherry Blossom Path',      author:'Hana Yuki',      category:'Nature',       likes:8421, saves:3100, desc:'Thousands of sakura petals create a pink canopy over a quiet path in Kyoto's Maruyama Park.',                           tags:['sakura','japan','spring'],            comments:[] },
+  { id:10, img:'foto10.png', title:'Brutalist Facade',         author:'Arch Weekly',    category:'Architecture', likes:2100, saves:430,  desc:'Soviet-era brutalist housing block reimagined through the lens of contemporary photography. Raw concrete beauty.',         tags:['brutalism','concrete','architecture'],comments:[] },
+  { id:11, img:'foto11.png', title:'Avocado Toast Deluxe',     author:'Café Morn',      category:'Food',         likes:4560, saves:1760, desc:'Sourdough toast with smashed avocado, cherry tomatoes, feta crumble and a drizzle of chili oil.',                        tags:['avocado','brunch','healthy'],         comments:[] },
+  { id:12, img:'foto12.png', title:'Bali Rice Terraces',       author:'Nomad Path',     category:'Travel',       likes:7340, saves:2980, desc:'The iconic Tegallalang rice terraces in Ubud, Bali bathed in soft morning light. A UNESCO World Heritage landscape.',     tags:['bali','rice','travel'],              comments:[] },
+  { id:13, img:'foto13.png', title:'Neon City Rain',           author:'Urban Pulse',    category:'Art',          likes:6210, saves:2340, desc:'Digital artwork capturing the atmospheric mood of a rainy cyberpunk city at night. Neon reflections on wet asphalt.',    tags:['neon','cyberpunk','digital'],         comments:[] },
+  { id:14, img:'foto14.png', title:'Linen Summer Dress',       author:'Soleil Brand',   category:'Fashion',      likes:3980, saves:1120, desc:'Effortless linen wrap dress in sage green. Perfect for warm evenings. Sustainable and ethically made.',                   tags:['linen','summer','dress'],             comments:[] },
+  { id:15, img:'foto15.png', title:'Keyboard Build RGB',       author:'Mech Keys',      category:'Tech',         likes:9102, saves:4200, desc:'Custom 65% mechanical keyboard with lubed Gateron yellows and hand-stitched leather wrist rest. Total build cost: $380.', tags:['keyboard','mechanical','rgb'],        comments:[] },
+  { id:16, img:'foto16.png', title:'Snow Leopard Stare',       author:'Alpine Lens',    category:'Animals',      likes:13400,saves:6800, desc:'Rare close-up of a snow leopard in the Himalayas. Shot during a 3-week expedition at 4800m altitude.',                   tags:['leopard','himalaya','rare'],          comments:[] },
+  { id:17, img:'foto17.png', title:'Ocean Cave Blue',          author:'Dive Deep',      category:'Nature',       likes:5870, saves:2100, desc:'The ethereal blue light inside a sea cave in the Azores. Kayaking accessible only at low tide.',                         tags:['ocean','cave','blue'],               comments:[] },
+  { id:18, img:'foto18.png', title:'Glass Skyscraper',         author:'City Views',     category:'Architecture', likes:3120, saves:780,  desc:'Looking up at a glass-clad tower in downtown Manhattan. The sky becomes a mosaic of reflected clouds.',                   tags:['skyscraper','glass','nyc'],           comments:[] },
+  { id:19, img:'foto19.png', title:'Croissant Close-up',       author:'Patisserie B',   category:'Food',         likes:8200, saves:3400, desc:'Perfectly laminated butter croissant with golden honeycomb layers. 72-hour fermentation. Paris-trained baker.',           tags:['croissant','pastry','paris'],         comments:[] },
+  { id:20, img:'foto20.png', title:'Northern Lights Camp',     author:'Arctic Soul',    category:'Travel',       likes:15600,saves:7200, desc:'Aurora borealis dancing above a cozy tent in Finnish Lapland. Temperatures: -28°C. Worth every frozen second.',           tags:['aurora','lapland','northernlights'],  comments:[] },
+];
+
+const heightMap = [
+  240,320,200,360,280,300,220,380,260,340,
+  250,310,290,370,230,360,280,320,240,400
+];
+
+let boards = [
+  { id:1, name:'Favourites', emoji:'❤️',  pins:[] },
+  { id:2, name:'Travel Goals', emoji:'✈️', pins:[] },
+  { id:3, name:'Design Inspo', emoji:'🎨', pins:[] },
+];
+
+let savedPins      = new Set();
+let likedPins      = new Set();
+let currentPinId   = null;
+let currentCategory= 'All';
+let currentSection = 'home';
+let searchQuery    = '';
+
+// ════════════════════════════════════════════
+//  RENDER PINS
+// ════════════════════════════════════════════
+function getVisiblePins() {
+  let list = currentSection === 'saved'
+    ? pins.filter(p => savedPins.has(p.id))
+    : [...pins];
+
+  if (currentCategory !== 'All')
+    list = list.filter(p => p.category === currentCategory);
+
+  if (searchQuery)
+    list = list.filter(p =>
+      p.title.toLowerCase().includes(searchQuery) ||
+      p.author.toLowerCase().includes(searchQuery) ||
+      p.tags.some(t => t.includes(searchQuery))
+    );
+
+  return list;
+}
+
+function renderGrid() {
+  const grid  = document.getElementById('masonryGrid');
+  const empty = document.getElementById('emptyMsg');
+  const list  = getVisiblePins();
+
+  grid.innerHTML = '';
+  if (!list.length) { empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  list.forEach(pin => {
+    const isSaved = savedPins.has(pin.id);
+    const isLiked = likedPins.has(pin.id);
+    const h = heightMap[(pin.id - 1) % heightMap.length];
+
+    const card = document.createElement('div');
+    card.className = 'pin-card';
+    card.dataset.id = pin.id;
+    card.innerHTML = `
+      <div style="position:relative;">
+        <img src="${pin.img}" alt="${pin.title}" style="height:${h}px;"
+             onerror="this.style.background='linear-gradient(135deg,#${randColor(pin.id)},#${randColor(pin.id+3)})';this.src=''"/>
+        <div class="pin-overlay"></div>
+        <button class="btn-save ${isSaved?'saved':'unsaved'}"
+                onclick="event.stopPropagation();toggleSave(${pin.id},this)">
+          ${isSaved?'✔ Saved':'Save'}
+        </button>
+        <button class="btn-more" onclick="event.stopPropagation();openModal(${pin.id})">⋯</button>
+      </div>
+      <div class="pin-footer">
+        <div class="pin-title">${pin.title}</div>
+        <div class="pin-author">
+          <div class="avatar-sm">${pin.author[0]}</div>
+          ${pin.author}
+        </div>
+        <div class="pin-likes">
+          ${isLiked?'❤️':'🤍'} ${(pin.likes + (isLiked?1:0)).toLocaleString()}
+          &nbsp;·&nbsp; 📌 ${pin.saves.toLocaleString()}
+        </div>
+      </div>`;
+    card.addEventListener('click', () => openModal(pin.id));
+    grid.appendChild(card);
+  });
+}
+
+function randColor(seed) {
+  const colors = ['e8c4a0','a0c4e8','c4a0e8','a0e8c4','e8a0c4','c4e8a0','e8d4a0','a0d4e8'];
+  return colors[seed % colors.length];
+}
+
+// ════════════════════════════════════════════
+//  SAVE / LIKE
+// ════════════════════════════════════════════
+function toggleSave(id, btn) {
+  if (savedPins.has(id)) {
+    savedPins.delete(id);
+    if (btn) { btn.textContent='Save'; btn.className='btn-save unsaved'; }
+    showToast('Removed from saved');
+  } else {
+    savedPins.add(id);
+    if (btn) { btn.textContent='✔ Saved'; btn.className='btn-save saved'; }
+    showToast('📌 Saved to your collection!');
+  }
+  if (currentSection === 'saved') renderGrid();
+  syncModalSaveBtn();
+}
+
+function toggleModalLike() {
+  if (!currentPinId) return;
+  const pin = pins.find(p => p.id === currentPinId);
+  const btn = document.getElementById('modalLikeBtn');
+  if (likedPins.has(currentPinId)) {
+    likedPins.delete(currentPinId);
+    btn.textContent = '🤍'; btn.classList.remove('liked');
+    showToast('Unliked');
+  } else {
+    likedPins.add(currentPinId);
+    btn.textContent = '❤️'; btn.classList.add('liked');
+    showToast('❤️ Liked!');
+  }
+  refreshModalStats(pin);
+  renderGrid();
+}
+
+function syncModalSaveBtn() {
+  if (!currentPinId) return;
+  const btn = document.getElementById('modalSaveBtn');
+  if (savedPins.has(currentPinId)) {
+    btn.textContent = '✔ Saved'; btn.classList.add('saved-modal');
+  } else {
+    btn.textContent = 'Save'; btn.classList.remove('saved-modal');
+  }
+}
+
+function saveToBoard() {
+  if (!currentPinId) return;
+  const sel = document.getElementById('modalBoardSelect');
+  const boardId = parseInt(sel.value);
+  const board = boards.find(b => b.id === boardId);
+  if (!board) return;
+
+  if (!board.pins.includes(currentPinId)) {
+    board.pins.push(currentPinId);
+    showToast(`📌 Saved to "${board.name}"!`);
+  }
+  toggleSave(currentPinId, null);
+  syncModalSaveBtn();
+  renderBoardsList();
+}
+
+// ════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════
+function openModal(id) {
+  currentPinId = id;
+  const pin = pins.find(p => p.id === id);
+  if (!pin) return;
+
+  document.getElementById('modalImg').src         = pin.img;
+  document.getElementById('modalTitle').textContent= pin.title;
+  document.getElementById('modalDesc').textContent = pin.desc;
+
+  // tags
+  document.getElementById('modalTags').innerHTML =
+    pin.tags.map(t => `<span class="modal-tag">#${t}</span>`).join('');
+
+  // author
+  document.getElementById('modalAuthorName').textContent = pin.author;
+  document.getElementById('modalAvatar').textContent     = pin.author[0];
+  document.getElementById('modalFollowers').textContent  =
+    `${(Math.floor(Math.random()*90+10))}K followers`;
+
+  // like btn
+  const likeBtn = document.getElementById('modalLikeBtn');
+  likeBtn.textContent = likedPins.has(id) ? '❤️' : '🤍';
+  likedPins.has(id) ? likeBtn.classList.add('liked') : likeBtn.classList.remove('liked');
+
+  // stats
+  refreshModalStats(pin);
+
+  // board select
+  const sel = document.getElementById('modalBoardSelect');
+  sel.innerHTML = boards.map(b => `<option value="${b.id}">${b.emoji} ${b.name}</option>`).join('');
+
+  syncModalSaveBtn();
+
+  // comments
+  renderComments(pin);
+
+  document.getElementById('pinModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function refreshModalStats(pin) {
+  const likes = pin.likes + (likedPins.has(pin.id) ? 1 : 0);
+  document.getElementById('modalStats').innerHTML = `
+    <div class="stat-item"><span class="stat-val">${likes.toLocaleString()}</span><span class="stat-lbl">Likes</span></div>
+    <div class="stat-item"><span class="stat-val">${pin.saves.toLocaleString()}</span><span class="stat-lbl">Saves</span></div>
+    <div class="stat-item"><span class="stat-val">${pin.comments.length}</span><span class="stat-lbl">Comments</span></div>`;
+}
+
+function closeModal() {
+  document.getElementById('pinModal').classList.remove('open');
+  document.body.style.overflow = '';
+  currentPinId = null;
+}
+
+function handleModalClick(e) {
+  if (e.target === document.getElementById('pinModal')) closeModal();
+}
+
+function renderComments(pin) {
+  const wrap = document.getElementById('modalComments');
+  if (!pin.comments.length) {
+    wrap.innerHTML = `<div style="font-size:.8rem;color:#aaa;padding:8px 0;">No comments yet — be the first!</div>`;
+    return;
+  }
+  wrap.innerHTML = pin.comments.map(c => `
+    <div class="comment-item">
+      <div class="avatar" style="width:28px;height:28px;font-size:.6rem;flex-shrink:0;">${c.author[0]}</div>
+      <div><span class="comment-author">${c.author} </span><span class="comment-text">${c.text}</span></div>
+    </div>`).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function postComment() {
+  if (!currentPinId) return;
+  const input = document.getElementById('commentInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  const pin = pins.find(p => p.id === currentPinId);
+  pin.comments.push({ author:'You', text });
+  input.value = '';
+  renderComments(pin);
+  refreshModalStats(pin);
+  showToast('💬 Comment posted!');
+}
+
+// ════════════════════════════════════════════
+//  BOARDS
+// ════════════════════════════════════════════
+let nextBoardId = 4;
+
+function renderBoardsList() {
+  const list = document.getElementById('boardsList');
+  list.innerHTML = boards.map(b => `
+    <div class="board-card" onclick="filterByBoard(${b.id})">
+      <div class="board-thumb">${b.emoji}</div>
+      <div class="board-info">
+        <div class="board-name">${b.name}</div>
+        <div class="board-count">${b.pins.length} pin${b.pins.length!==1?'s':''}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteBoard(${b.id})"
+        style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1rem;opacity:.4;transition:opacity .18s;"
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.4'">🗑</button>
+    </div>`).join('');
+}
+
+function toggleSidebar() {
+  document.getElementById('boardsSidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+  renderBoardsList();
+}
+
+function filterByBoard(id) {
+  const board = boards.find(b => b.id === id);
+  if (!board) return;
+  savedPins = new Set(board.pins);
+  currentSection = 'saved';
+  currentCategory = 'All';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.chip').classList.add('active');
+  document.getElementById('sectionHead').textContent = `${board.emoji} ${board.name}`;
+  toggleSidebar();
+  renderGrid();
+}
+
+function deleteBoard(id) {
+  boards = boards.filter(b => b.id !== id);
+  renderBoardsList();
+  showToast('Board deleted');
+}
+
+function openNewBoard() {
+  document.getElementById('nbModal').classList.add('open');
+  document.getElementById('nbNameInput').value = '';
+  document.getElementById('nbNameInput').focus();
+}
+
+function closeNewBoard() {
+  document.getElementById('nbModal').classList.remove('open');
+}
+
+function handleNbClick(e) {
+  if (e.target === document.getElementById('nbModal')) closeNewBoard();
+}
+
+function createBoard() {
+  const name  = document.getElementById('nbNameInput').value.trim();
+  const emoji = document.getElementById('nbEmojiSelect').value;
+  if (!name) { showToast('Please enter a board name'); return; }
+  boards.push({ id: nextBoardId++, name, emoji, pins:[] });
+  closeNewBoard();
+  renderBoardsList();
+  showToast(`📋 Board "${name}" created!`);
+}
+
+// ════════════════════════════════════════════
+//  FILTER / SEARCH / SECTION
+// ════════════════════════════════════════════
+function setCategory(cat, el) {
+  currentCategory = cat;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function filterPins() {
+  searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+  renderGrid();
+}
+
+function showSection(sec) {
+  currentSection = sec;
+  document.getElementById('sectionHead').textContent =
+    sec === 'home' ? 'Explore Pins' : '📌 Saved Pins';
+  renderGrid();
+}
+
+// ════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+// ════════════════════════════════════════════
+//  KEYBOARD
+// ════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeNewBoard(); }
+});
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+renderGrid();
+renderBoardsList();
+</script>
+</body>
+</html>
