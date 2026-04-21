@@ -2,16 +2,17 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CatBoard Premium – Эстетика котиков</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>CatBoard Mobile – Эстетика в твоем кармане</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Nunito:wght@400;700&display=swap');
 
     :root {
-      --accent: #ff85a2; /* Нежно-розовый */
+      --accent: #ff85a2;
       --accent-hover: #ff6384;
       --bg-gradient: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+      --glass: rgba(255, 255, 255, 0.75);
     }
 
     body {
@@ -19,166 +20,204 @@
       background: var(--bg-gradient);
       background-attachment: fixed;
       color: #2d3436;
+      padding-bottom: 70px; /* Отступ под нижнее меню */
     }
 
-    h1, h2, .logo-text { font-family: 'Montserrat', sans-serif; }
-
-    /* ── Header Styling ── */
+    /* ── Header ── */
     .header {
-      background: rgba(255, 255, 255, 0.7);
+      background: var(--glass);
       backdrop-filter: blur(15px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 10px 16px;
     }
 
-    /* ── Glassmorphism Sidebar ── */
-    .sidebar {
-      background: rgba(255, 255, 255, 0.4);
-      backdrop-filter: blur(10px);
-      border-right: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 0 30px 30px 0;
-      margin: 20px 0;
-    }
-
-    /* ── Masonry & Cards ── */
+    /* ── Сетка (Mobile First) ── */
     .masonry {
-      column-count: 4;
-      column-gap: 20px;
+      column-count: 2;
+      column-gap: 12px;
+      padding: 12px;
     }
-    @media (max-width: 1200px) { .masonry { column-count: 3; } }
-    @media (max-width: 768px) { .masonry { column-count: 2; } }
+    @media (min-width: 768px) { .masonry { column-count: 3; } }
+    @media (min-width: 1024px) { .masonry { column-count: 4; } }
+    @media (min-width: 1440px) { .masonry { column-count: 5; } }
 
     .pin-card {
       break-inside: avoid;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       position: relative;
-      border-radius: 24px;
+      border-radius: 20px;
       overflow: hidden;
       background: white;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      border: 4px solid transparent;
-    }
-    .pin-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      border-color: var(--accent);
-      box-shadow: 0 15px 30px rgba(255, 133, 162, 0.2);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      animation: fadeIn 0.5s ease backwards;
     }
 
+    /* На мобилках показываем кнопку всегда, на десктопе при наведении */
     .pin-overlay {
-      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
-      padding: 20px;
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 40%);
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
+      justify-content: space-between;
+      padding: 10px;
+      opacity: 1; 
     }
 
-    /* ── Buttons ── */
+    @media (min-width: 1024px) {
+      .pin-overlay { opacity: 0; transition: opacity 0.3s; }
+      .pin-card:hover .pin-overlay { opacity: 1; }
+      .pin-card:hover { transform: translateY(-5px); }
+    }
+
+    /* ── Мобильное нижнее меню ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 12px 0;
+      border-top: 1px solid rgba(255,255,255,0.3);
+      z-index: 1000;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #636e72;
+      transition: 0.3s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item svg { width: 24px; height: 24px; }
+
+    /* ── Боковая шторка для досок (Мобильная) ── */
+    .drawer {
+      position: fixed;
+      bottom: -100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 30px 30px 0 0;
+      z-index: 1100;
+      transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      padding: 24px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .drawer.open { bottom: 0; }
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1050;
+      display: none;
+    }
+    .drawer-overlay.active { display: block; }
+
+    /* ── Кнопки и формы ── */
     .btn-save {
       background: var(--accent);
       color: white;
-      padding: 8px 20px;
+      padding: 6px 14px;
       border-radius: 50px;
-      font-weight: 700;
-      transition: 0.3s;
-      box-shadow: 0 4px 15px rgba(255, 133, 162, 0.4);
-    }
-    .btn-save:hover {
-      background: var(--accent-hover);
-      transform: scale(1.05);
+      font-weight: 800;
+      font-size: 12px;
+      box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3);
     }
 
-    /* ── Custom Search ── */
-    .search-input {
-      background: rgba(255, 255, 255, 0.8);
-      border: 2px solid transparent;
-      transition: 0.3s;
+    .search-container {
+      background: rgba(255,255,255,0.9);
       border-radius: 15px;
-    }
-    .search-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 15px rgba(255, 133, 162, 0.2);
-      background: white;
-    }
-
-    /* ── Decorative Paw Print ── */
-    .paw-icon {
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+      padding: 8px 16px;
+      margin: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
-    /* ── Animations ── */
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
     }
-    .pin-card { animation: fadeIn 0.6s ease backwards; }
   </style>
 </head>
 <body>
 
-<header class="header sticky top-0 z-50 flex items-center justify-between px-8 py-4">
-  <div class="flex items-center gap-3 cursor-pointer group" onclick="showSection('all')">
-    <div class="bg-[#ff85a2] text-white w-12 h-12 flex items-center justify-center rounded-2xl font-bold text-2xl shadow-lg group-hover:rotate-12 transition-transform">🐾</div>
-    <span class="logo-text font-extrabold text-2xl tracking-tighter text-gray-800">Cat<span class="text-[#ff85a2]">Board</span></span>
-  </div>
-  
-  <div class="flex-1 max-w-2xl mx-10">
-    <input type="text" class="search-input w-full px-6 py-3 outline-none" id="searchInput" placeholder="Найти пушистого друга..." oninput="filterPins()">
-  </div>
-
-  <div class="flex gap-5 items-center">
-    <button class="text-gray-500 hover:text-[#ff85a2] transition-colors">❤</button>
-    <div class="w-11 h-11 rounded-full border-2 border-[#ff85a2] p-0.5">
-       <img src="https://api.dicebear.com/7.x/bottts/svg?seed=CatOwner" class="rounded-full bg-white" alt="Ava">
+<header class="header">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2" onclick="showSection('all')">
+      <div class="bg-[#ff85a2] text-white w-9 h-9 flex items-center justify-center rounded-xl font-bold text-lg">🐾</div>
+      <span class="font-extrabold text-xl tracking-tighter">Cat<span class="text-[#ff85a2]">Board</span></span>
+    </div>
+    <div class="w-9 h-9 rounded-full border-2 border-[#ff85a2] overflow-hidden">
+      <img src="https://api.dicebear.com/7.x/bottts/svg?seed=CatUser" alt="User">
     </div>
   </div>
 </header>
 
-<div class="flex max-w-[1600px] mx-auto">
-  <aside class="sidebar w-72 p-6 hidden md:block">
-    <div class="space-y-2">
-      <button onclick="showSection('all')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-white transition-all font-bold flex items-center gap-3 text-gray-700">
-        🏠 Главная лента
-      </button>
-      <button onclick="showSection('saved')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-white transition-all font-bold flex items-center gap-3 text-gray-700">
-        💖 Мои любимцы
-      </button>
-      
-      <div class="mt-10 mb-4 px-4 text-xs font-black text-[#ff85a2] uppercase tracking-[2px]">Мои коллекции</div>
-      <div id="boardsList" class="space-y-1">
-        </div>
-      
-      <button onclick="openModal()" class="mt-4 w-full border-2 border-dashed border-[#ff85a2] text-[#ff85a2] py-3 rounded-xl font-bold hover:bg-[#ff85a2] hover:text-white transition-all">
-        + Новая доска
-      </button>
-    </div>
-  </aside>
-
-  <main class="flex-1 p-8">
-    <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
-      <div>
-        <p class="text-[#ff85a2] font-bold uppercase tracking-widest text-xs mb-1">Мяу-подборка</p>
-        <h1 id="pageTitle" class="text-4xl font-extrabold text-gray-900">Для вас</h1>
-      </div>
-    </div>
-
-    <div class="masonry" id="pinGrid">
-      </div>
-  </main>
+<div class="search-container">
+  <span>🔍</span>
+  <input type="text" id="searchInput" class="w-full outline-none text-sm font-semibold" placeholder="Найти котика..." oninput="filterPins()">
 </div>
 
-<div class="modal fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] hidden items-center justify-center" id="boardModal" onclick="closeModal()">
-  <div class="bg-white p-10 rounded-[40px] w-full max-w-sm shadow-2xl transition-all" onclick="event.stopPropagation()">
-    <div class="text-center mb-6">
-       <div class="text-4xl mb-2">📁</div>
-       <h2 class="text-2xl font-black">Назовите доску</h2>
+<main class="px-2">
+  <div class="flex items-baseline justify-between px-3 mt-4 mb-2">
+    <h1 id="pageTitle" class="text-2xl font-black text-gray-800">Для вас</h1>
+    <span class="text-[10px] font-bold text-[#ff85a2] uppercase tracking-widest">Обновлено</span>
+  </div>
+
+  <div class="masonry" id="pinGrid">
     </div>
-    <input type="text" id="boardNameInput" class="w-full bg-gray-100 rounded-2xl p-4 mb-6 outline-none focus:ring-2 ring-[#ff85a2]" placeholder="Напр: Спящие булочки">
-    <button onclick="createBoard()" class="w-full py-4 bg-[#ff85a2] text-white font-black rounded-2xl shadow-lg hover:bg-[#ff6384] transition-all">Создать коллекцию</button>
+</main>
+
+<nav class="bottom-nav">
+  <button onclick="showSection('all')" class="nav-item active" id="nav-home">
+    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    ГЛАВНАЯ
+  </button>
+  <button onclick="showSection('saved')" class="nav-item" id="nav-saved">
+    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    ИЗБРАННОЕ
+  </button>
+  <button onclick="toggleDrawer()" class="nav-item">
+    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+    ДОСКИ
+  </button>
+</nav>
+
+<div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+  <h2 class="text-xl font-black mb-4">Ваши коллекции</h2>
+  <div id="boardsList" class="space-y-3 mb-6"></div>
+  <button onclick="openModal()" class="w-full py-4 border-2 border-dashed border-[#ff85a2] text-[#ff85a2] font-bold rounded-2xl">
+    + Создать новую доску
+  </button>
+</div>
+
+<div class="fixed inset-0 z-[2000] hidden items-center justify-center p-6" id="boardModal">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+  <div class="relative bg-white p-8 rounded-[30px] w-full shadow-2xl">
+    <h3 class="text-xl font-black mb-4 text-center">Название доски</h3>
+    <input type="text" id="boardNameInput" class="w-full bg-gray-100 rounded-xl p-4 mb-4 outline-none" placeholder="Напр: Рыжие">
+    <button onclick="createBoard()" class="w-full py-4 bg-[#ff85a2] text-white font-black rounded-xl">Создать</button>
   </div>
 </div>
 
-<div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-full font-bold shadow-2xl opacity-0 translate-y-20 transition-all pointer-events-none"></div>
+<div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full font-bold text-sm shadow-xl transition-all opacity-0 pointer-events-none z-[3000]"></div>
 
 <script>
 const allPins = [
@@ -203,29 +242,38 @@ const allPins = [
   { id: 19, title: 'Задумчивость', cat: 'Милые', img: 'photo_2026-01-24_00-19-20.jpg' }
 ];
 
-let boards = JSON.parse(localStorage.getItem('catBoardsV2')) || [{ id: 1, name: 'Избранное', pins: [] }];
+let boards = JSON.parse(localStorage.getItem('catBoardsMobile')) || [{ id: 1, name: 'Избранное', pins: [] }];
 let currentSection = 'all';
 let searchQuery = '';
 
 function renderBoardsList() {
   const list = document.getElementById('boardsList');
   list.innerHTML = boards.map(b => `
-    <button onclick="showSection('board', ${b.id})" class="w-full text-left px-4 py-2 rounded-xl hover:bg-white text-sm font-bold flex justify-between items-center group transition-all">
-      <span class="text-gray-600 group-hover:text-black">🐾 ${b.name}</span>
-      <span class="bg-[#ff85a2]/10 text-[#ff85a2] px-2 py-0.5 rounded-lg text-[10px]">${b.pins.length}</span>
-    </button>
+    <div onclick="showSection('board', ${b.id}); toggleDrawer()" class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl active:scale-95 transition-all">
+      <div class="flex items-center gap-3">
+        <span class="text-xl">📂</span>
+        <span class="font-bold">${b.name}</span>
+      </div>
+      <span class="bg-[#ff85a2] text-white text-[10px] px-2 py-1 rounded-full">${b.pins.length}</span>
+    </div>
   `).join('');
 }
 
 function showSection(type, id = null) {
   currentSection = type === 'board' ? id : type;
+  
+  // Update UI active states
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if(type === 'all') document.getElementById('nav-home').classList.add('active');
+  if(type === 'saved') document.getElementById('nav-saved').classList.add('active');
+
   const title = document.getElementById('pageTitle');
-  
   if (type === 'all') title.textContent = 'Для вас';
-  else if (type === 'saved') title.textContent = 'Все сохраненные';
-  else title.textContent = boards.find(b => b.id === id)?.name || 'Доска';
-  
+  else if (type === 'saved') title.textContent = 'Избранное';
+  else title.textContent = boards.find(b => b.id === id)?.name;
+
   renderGrid();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderGrid() {
@@ -234,30 +282,30 @@ function renderGrid() {
 
   if (currentSection === 'all') filtered = allPins;
   else if (currentSection === 'saved') {
-    const ids = [...new Set(boards.flatMap(b => b.pins))];
+    const ids = boards[0].pins;
     filtered = allPins.filter(p => ids.includes(p.id));
   } else {
-    filtered = allPins.filter(p => boards.find(b => b.id === currentSection)?.pins.includes(p.id));
+    const b = boards.find(b => b.id === currentSection);
+    filtered = allPins.filter(p => b.pins.includes(p.id));
   }
 
   if (searchQuery) {
-    filtered = filtered.filter(p => p.title.toLowerCase().includes(searchQuery) || p.cat.toLowerCase().includes(searchQuery));
+    filtered = filtered.filter(p => p.title.toLowerCase().includes(searchQuery));
   }
 
-  grid.innerHTML = filtered.map((pin, index) => {
-    const isSaved = boards.some(b => b.pins.includes(pin.id));
+  grid.innerHTML = filtered.map(pin => {
+    const isSaved = boards[0].pins.includes(pin.id);
     return `
-      <div class="pin-card" style="animation-delay: ${index * 0.05}s">
-        <img src="${pin.img}" alt="${pin.title}">
-        <div class="pin-overlay absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300">
-          <div class="flex justify-end mb-auto">
-            <button onclick="toggleSave(${pin.id}, event)" class="btn-save shadow-lg">
-              ${isSaved ? 'Удалить' : 'В коллекцию'}
+      <div class="pin-card">
+        <img src="${pin.img}" alt="${pin.title}" class="w-full">
+        <div class="pin-overlay">
+          <div class="flex justify-end">
+            <button onclick="toggleSave(${pin.id}, event)" class="btn-save">
+              ${isSaved ? '❤️' : 'Сохранить'}
             </button>
           </div>
           <div class="text-white">
-            <p class="text-[10px] uppercase font-bold tracking-widest opacity-80">${pin.cat}</p>
-            <h3 class="font-black text-lg leading-tight">${pin.title}</h3>
+            <h3 class="font-bold text-[11px] leading-tight drop-shadow-md">${pin.title}</h3>
           </div>
         </div>
       </div>
@@ -267,17 +315,22 @@ function renderGrid() {
 
 function toggleSave(pinId, event) {
   event.stopPropagation();
-  const mainBoard = boards[0];
-  if (mainBoard.pins.includes(pinId)) {
-    mainBoard.pins = mainBoard.pins.filter(id => id !== pinId);
-    showToast('Убрано из Избранного');
+  const main = boards[0];
+  if (main.pins.includes(pinId)) {
+    main.pins = main.pins.filter(id => id !== pinId);
+    showToast('Удалено');
   } else {
-    mainBoard.pins.push(pinId);
-    showToast('Мур! Сохранено ❤️');
+    main.pins.push(pinId);
+    showToast('Сохранено в Избранное ❤️');
   }
-  localStorage.setItem('catBoardsV2', JSON.stringify(boards));
+  localStorage.setItem('catBoardsMobile', JSON.stringify(boards));
   renderBoardsList();
   renderGrid();
+}
+
+function toggleDrawer() {
+  document.getElementById('drawer').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('active');
 }
 
 function filterPins() {
@@ -292,22 +345,18 @@ function createBoard() {
   const name = document.getElementById('boardNameInput').value.trim();
   if (!name) return;
   boards.push({ id: Date.now(), name, pins: [] });
-  localStorage.setItem('catBoardsV2', JSON.stringify(boards));
+  localStorage.setItem('catBoardsMobile', JSON.stringify(boards));
   document.getElementById('boardNameInput').value = '';
   closeModal();
   renderBoardsList();
-  showToast(`Доска "${name}" создана!`);
+  showToast(`Доска создана!`);
 }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.remove('opacity-0', 'translate-y-20');
-  t.classList.add('opacity-100', 'translate-y-0');
-  setTimeout(() => {
-    t.classList.add('opacity-0', 'translate-y-20');
-    t.classList.remove('opacity-100', 'translate-y-0');
-  }, 2500);
+  t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 2000);
 }
 
 renderBoardsList();
